@@ -1,0 +1,11 @@
+\^dx
+\^d\^dx
+\^d\^ux
+2\^dx
+\^fx
+\^f\^bx
+G\^ux
+G\^bx
+xx\^r
+ddxuu\^r\^r
+xu\^rx

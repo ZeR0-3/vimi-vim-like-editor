@@ -1,0 +1,92 @@
+# STATUS vimi 4 (2026-11-14)
+- MZVIM71 = far-code build (CRT_ORG_FAR=C000, BSS@CD00). low 37378B (ends 9302, 空き3326B), far 3200B, COM 52096B。
+- 原因バグ: hal/text_z80.asm の _nlc が st_countb 呼出後に IX(破壊される)を再設定していなかった → 旧ビルドではBSSへ無害に書込み、farでは C412 を破壊。修正済(ld ix,0/add ix,sp)。
+- 検証: regress ALL OK / fuzz seed7 OK / P7再現シナリオ OK。BIG.TXT(-sF120)・:ls・:! は未再実行。
+- デバッグ手法: /tmp/embuild のエミュに MZWATCH=ADDR(hex) 環境変数で書込みウォッチ(PC/SP/IX/stack表示)を追加(core/mz2500.cpp、元は /tmp/mz2500.cpp.orig)。
+- 次: BIG.TXT/:ls/:!/Ctrl-A 再確認、空きを使った機能(名前付きレジスタ等)。
+- 追加検証(71): :ls OK / BIG.TXT(-sF120)は dd→編集→:wq で保存OK(未編集のまま挿入は容量満杯で "buffer full": 70も同じ=仕様) / :!ver で実行後エディタ復帰OK / Ctrl-A OK。
+- 既知: Ctrl-A は先頭ゼロを落とす(007→8)。vimは幅維持(007→008)。次の小改善候補。
+- MZVIM73: 名前付きレジスタ a-z ("ayy "Ayy "ap, visualも可)。プール1KB(aux、TX_AUX 3072)。regstore/regload/regcompactはfar。low 37974(空き2730) far 4004 BSS@D000 end DBD5(スタック余裕~980B、実測深さ<680B)。Ctrl-A先頭ゼロ維持(MZVIM72)。regress/fuzz11 OK。emu_regressに'"'(shift+2)追加。
+- 注意: "a の dot繰返しは記録されるが、p後 unnamed が a の内容になる(vimと差)。未実装: "_ , "0, "1-9, "+ 。
+- MZVIM74: マクロ qa..q / @a / @@ / 3@a / qA追記 (最大80キー、レジスタプールに保存)。low空き2158, far 4043, BSS end DC2C(スタック余裕~890B)。未対応: マクロ内ネスト@、qaqでクリア。
+- スタック実測(2026-11-14): EXTRA=-DSTKDBG OUT=/tmp/vd bash tools/bz_build.sh でデバッグ版(:stk で未使用バイト数表示)。C.TXT重操作・BIG.TXT(:%s,u,検索,:w)で最大使用 ≈150B。余裕は約890B(BSS end DC2C→DFAA)。スタック懸念は低い。総空き= low2158+stack余裕~890。
+- MZVIM75: :set ai/noai (Enter,o,O が直前行のインデントを継承。gind/pindはfar)。BSS丸めを0x10に変更(bz_build.sh)。low空き1993, far 4353, BSS D110..DD60 → スタック余裕586B(実測最大~150B)。
+- MZVIM76: exレンジ(N . $ %, :N,Md, :N,Ms///) と :g/:v (d, s///, 下から上へ訪問, :s//x/ は直前パターン)。Cで実装すると+~900B。bank6が満杯になったのでdosearch(765B)をlowへ戻した: low空き1274, far 4490, BSS D190..DE13 → スタック余裕407B(g含む重操作の実測使用~165B)。 総空き≈1.7KB。以降の機能追加は取捨選択が必要。削減候補: :ls(+lsb176B)、マクロ(~570B+80)、ai(~400B)、名前付きレジスタ(~1080B)、:!(V.BAT)。
+- MZVIM77: :ls/:dir と Ctrl-A/X (incr, incr_core asm) を削除。low空き3092, far 4404, BSS D140..DC92 → スタック余裕792B。ユーザー判断: 削る対象は :ls と Ctrl-A/X。残す: ex範囲/:g, ai, :!, 名前付きレジスタ, マクロ。
+- MZVIM78: LSX E5h EXEC 対応。:!cmd = hal/exec_z80.asm(exec_ok/exec_call)+hal_mz2500.c fs_exec(hal_exit→E5h→Press any key→hal_init)。:r !cmd = "cmd >VIMI.TMP" を実行→:r→erase。E5h無しOS(0xFE)は従来のV.BAT方式にフォールバック。7ページ空き不足(F0h)は "need 7 free pages: ramdisk 64"。
+- store_z80.asm: 子用に7ページ空けるため、空きページ>=9なら確保数=min(6,空き-7)。ramdisk 64なら store 24KB(3ページ)。既定F:128KBだと空き2ページ(新LSXは09がOS使用)でE5h不可。CMDSZ 40→64。
+- 検証: 新LSX(/tmp/lsxexec/.../LSX2500_80col.d88)で ramdisk 64 → :!dir 表示→キーで復帰、:r !dir b*.* 挿入OK、既定ramdiskで F0 メッセージ。旧LSXでregress ALL OK。未確認: 実機, 子の長時間実行, ramdisk 0での48KB。
+- LSX側の注意(handoff): パイプ・.BAT不可, 子のcd/環境変数は親に残る, 窓は全部閉じてから(hal_clearでst_close済み)。
+- MZVIM79: ビジュアルブロック Ctrl-V (d x c s I A のみ。y/p/ブロックレジスタは約900B余計にかかるので見送り、全版は /tmp/editor_blk_full.c)。+1576B: low空き1181, far 4602, BSS D200..~DE2B(スタック余裕~380B)。総空き≈1.5KB。emu_regress/hostrunに \v(Ctrl-V)追加。
+- 新LSX(2026-11-14 16:48受領 lsx2500_vim_exec_handoff_1.zip、LSX2500_80col.d88 759808B、親リダイレクトをE5h後も保つ修正入り。/tmp/LSXF.d88)でMZVIM79を確認: ramdisk 64/0/32 で :!dir 動作・復帰OK、既定128KBは「need 7 free pages: ramdisk 64」、:r !dir 取り込みOK、VIMI.TMPは終了後に消える。vim側の修正不要。エミュのみ、実機未確認。エミュ入力メモ: OSプロンプトへの最初の --type はフレーム500以降(300だと欠ける)。
+- MZVIM80 (構造レビューの1と6):
+  - アンドゥログに入らない大きな変更(1グループ512B超、例 30dd)で「too big: cannot undo」を表示(uwarn、ed_keyの最後で表示。マクロ/ドット再生中は外側で1回)。動作自体は従来どおり全部破棄(all or nothing)。TUTORに注記。
+  - バグ修正(ホストとZ80両方で再現・修正確認): undoグループIDが8bitで、アイドルキーごとに+1していたため256キーで一周。(a) 破棄済みグループの印 ud[] が残っていて、256キー後の変更がログされず、次の u が古い位置に適用されテキストを壊した。(b) 256キー離れた2つの変更が1回の u でまとめて戻った。修正: 現在のIDがログ末尾で使われた(または破棄された)ときだけ ugrp++、アイドルごとに ud[] をクリア。
+  - tools/bz_build.sh: スタック余裕(0xDFAA − BSS終端)が STKMIN(既定256)未満ならビルド失敗。low側アサート失敗時も exit 1。表示に BSS範囲と stack room を追加。
+  - サイズ: low 39641(空き1063、−118B), far 4602, BSS D200..DDA9, stack room 513B(実測最大使用~165B)。
+  - テスト: host 491/491(POS32)・487/487。emu_regress 既定36 + tools/scen/features.txt 50 + tools/scen/undo.txt 9 + fuzz seed80×40 全OK。新LSXで :!dir 再確認OK。
+  - 注意: z88dk環境変数は export を2行に分ける(export Z88DK_PATH=...; export ZCCCFG=$Z88DK_PATH/lib/config PATH=$Z88DK_PATH/bin:$PATH)。1行だと新しいシェルで zcc が見つからず、古いVIMI.COMのままになる。
+  - 構造レビューの残り(未着手): 2 回帰シナリオの常用化(tools/scen に保存済み)、3 ソースzipの受け渡し、4 「入力途中か」判定の一本化、5 マクロ/ドットの再帰をキー待ち行列に、7 editor.c の分割。
+- MZVIM81 (構造レビューの2・3・4):
+  - 4: ed_key の「入力途中」判定を busy()(pend||count||pq||pf)に一本化(q停止・idle・reg解除・ドット記録の4か所)。挙動差: "a の直後の f/t 対象文字までレジスタ指定が生きる(従来は f で解除)、f の対象文字キーで新グループ/記録リセットしない。いずれも無害。テスト4件追加。low +6B(空き1057)。
+  - 2: tools/check.sh [SEED]: ビルド(スタック/low検査)→ホストテスト2種→emu回帰(既定+tools/scen/features+undo+fuzz40)を並列で実行、約4分。納品前はこれを回す(Z88DK_PATH を export しておく)。
+  - 3: ソースzip(mzvim_src_MZVIM80/81.zip: core hal z80 tests tools docs BUILD.md STATUS)を納品。
+  - 結果: host 495/495・491/491、check.sh ALL CHECKS PASSED。
+  - 残り: 5 マクロ/ドットの再帰をキー待ち行列に(大きめ)、7 editor.c分割(実機確認後)。
+- MZVIM83 (2026-11-15): 構造レビューの5・7 と、アセンブラ化の第1〜5段。
+  - 5: マクロ/ドット再生の再帰を廃止。key1(k)=1キー処理、ed_key がループで lastrec(ドット、優先)→mb(マクロ)を流し込む(ri, mi, mc)。uwarn 表示は ed_key の最後。ホストで旧版と3000本の乱数スクリプト(q/@/. 入り)が一致。
+  - バグ修正: マクロ記録中の `.` で、再生されたキーまで mb に記録され二重になっていた(qax.jq → x.xj)。記録条件に !replay を追加。
+  - バグ修正(Z80のみ): カウントが 6554 以上で16bit溢れ(65540→4)。asm側で 1000 以上なら 9999 に丸め、ホスト(基準)と一致。
+  - 7: core/editor.c を分割(ユニティビルド: editor.c が ed_undo/ed_move/ed_reg/ed_op/ed_file/ed_search/ed_ex/ed_insert/ed_normal/ed_visual/ed_render.c を #include)。分割前後で VIMI.COM がバイト一致。far配置は ed_ex.c(全体)、ed_reg.c・ed_insert.c(一部)の #pragma。
+  - アセンブラ化(-DM_ASM。CはホストのテストとZ80の基準として残し、#ifndef M_ASM で囲む。asmから見える変数/関数は static を外した。1引数は FASTCALL=__z88dk_fastcall):
+    - hal/nav_z80.asm: lstart lend lstartc lendc tgetc setwant clampcur sethcur gotoline lmove lmoven para vmove cls nextword endword backword wordfwd wordback。32bit位置は DE=上位/HL=下位、作業域 mv_P mv_Q mv_T mv_L、IX不使用。
+    - hal/normal_z80.asm: normal_key 全体(f/t対象、; ,、カウント、g z q @ Z m ' ` r とオペレータ後の g/テキストオブジェクト/マーク、コマンドキーは表引き nk_tab+tabjp)、firstnb。
+    - hal/op_z80.asm: get_range(表 gr_tab)、op_motion(op_go)、op_apply(opa)。
+    - hal/key_z80.asm: busy / key1 / ed_key。
+    - hal/visual_z80.asm: vis_range / vis_motion / visual_key(オペレータ表 vk_ops)。
+  - サイズ: low 34382(空き 6322、開始時 1043 → +5.3KB), far 4584, BSS D1F0..DD86, stack room 548。Cで残る editor 部分は 18.6KB/80関数(開始時 29.2KB/110関数)。tools/csize.sh で関数別の残りを表示。
+  - 残り(大きい順): ed_render 1452, runcmd 1437, dosubst 875, dosearch 745, ulog_add 648, cmd_undo 593, insert_key 528, build_status 524, regstore 460, blkop 445, textobj 427, doglobal 401, shadow_scroll 385, prange 383, blkrep 369, star 367 ... (hal の C: text_blk 2.5KB, fs_bdos 2.0KB, store_mz2500 1.1KB, store_file 0.6KB, vimi_main 0.5KB も未着手)
+  - テスト基盤: tools/check.sh が tools/scen/{features,undo,move,ctrl,ops1-3,visual}.txt + fuzz を回す(2コアで約12分。SCEN="..." で絞れる)。emu_regress/hostrun に \^x(Ctrl-x)追加、シナリオ末尾に必ず \e を付ける(挿入モードのまま :wq が本文に入るのを防ぐ)。emu_fuzz のトークン追加。ホストテスト 499/499・495/495。
+  - 注意: asm と C の両方を直す必要がある(挙動を変えるときは C=基準を先に直し、asm を合わせ、check.sh で突き合わせ)。
+  - バグ修正(以前から。MZVIM81でも再現): スワップファイル方式(-sF120)の行数カウント hal/store_file_z80.asm _stf_countb が、1個目の一致のあと走査ポインタ HL を壊していた(カウンタ加算で上書き)。編集でブロックの改行数キャッシュ(bnl)が無効になると数え直しが狂い、`dd100G` が14行ずれる等(nG、:N、行番号表示)。push hl/pop hl で修正。ページ方式(通常)は無関係。
+  - 64KB超の確認を追加: tools/scen/mid.txt(/tmp/M.TXT=BIG.TXTの先頭1500行・80KB、64KB境界は1235行目)と tools/scen/big.txt(BIG.TXT 120KB・満杯)。emu_regress は MZV_FILE / MZV_ARGS / MZV_T0 / MZV_TAIL で対象ファイルと待ちフレームを指定(BIGはロードに約2万フレーム)。`BIG=1 bash tools/check.sh` で実行。32bit位置のasm(上位ワードへの繰り上がり)はこれで初めてエミュ上で通した。
+  - 既知(仕様寄り): BIG.TXT のように満杯のストアでは、行を消しても貼り付け(p)は "buffer full"(tx_free が空きブロック単位のため)。1文字ずつの挿入は同じブロック内なら入る。
+- MZVIM84 (2026-11-15): アセンブラ化の第6〜9段。
+  - hal/insert_z80.asm: insert_key(表 ik_tab)、leave_insert、repeat_insert、gind(gind_r: レジスタ渡し)、pind、begin_ins。gind/pind は far から low へ。
+  - hal/edit_z80.asm: findch、cmd_x、case_toggle、cmd_join、shift、screen_line、scroll_view、cmd_paste(+paste_ins、regload)、yankrange、casechg、textobj(iw/aw。引用符と括弧は既存の tobj)、star。
+  - hal/undo_z80.asm: mins/mdel、touched、tins、tinsn、tdel、keepinvariant、ulog_add(+drop_oldest)、cmd_undo(+raw_ins/raw_del)。ulog_add の引数は ua_grp..ua_L にスタックと同じ並びで置く(_ulog_add は ldir 1回)。
+  - サイズ: low 31870(空き 8834。アセンブラ化開始時 1043 → +7.8KB), far 4202, BSS D070..DC06, stack room 932。Cで残る editor 部分は 約11.4KB(開始時 29.2KB)。
+  - 残り(大きい順): ed_render 1452, runcmd 1437, dosubst 875, dosearch 745, build_status 524, regstore 460, blkop 445, doglobal 401, shadow_scroll 385, prange 383, blkrep 369, ed_load 337, ed_init 252, blkgeom 251, regcompact 237, flushrow 198, ed_set_text 194, putnum 170, doread 153, dosave 149, dobang 141, blkseg 141, lineno 141, cmd_key 121 ほか。hal の C(text_blk 2.5KB, fs_bdos 2.0KB, store_mz2500 1.1KB, store_file 0.6KB, vimi_main 0.5KB)も未着手。
+  - 画面まわり(ed_render/build_status/shadow_scroll)は、保存結果の突き合わせでは検証できない。着手前に「旧版と新版の画面ダンプ比較」の仕組みが要る。
+  - シナリオ追加: tools/scen/insert.txt(33) edit.txt(58) edit2.txt(62) undo2.txt(59)。キー表記に \^h(BS) \^i(TAB) \^r(挿入中はDEL)を使用。H/M/L や Ctrl-E/Y は画面位置に依存するので、top が 0 のままのケースだけ突き合わせ可能(ホストは描画しないため)。
+- MZVIM85 (2026-11-15): アセンブラ化の第10〜12段。editor 本体は画面描画まで asm 化。
+  - hal/ex_z80.asm: cmd_key、runcmd(:set は opt_tab、コマンドは cmd_tab の表引き)、prange、doglobal、dosubst、doread(+rsink)、dobang、dosearch、rxset。far から low へ。
+  - hal/block_z80.asm: blkgeom、blkseg、blkpad、blkop、blkrep、regcompact、regstore。
+  - hal/screen_z80.asm: ed_render、build_status、flushrow、shadow_scroll、lineno、putnum(32bit十進)。
+  - far コードが 0 になった: VIMI.COM は low だけの 32KB(以前は C000h までゼロ詰めして 53KB)。BSS は C000h から、スタック余裕 約5KB。tools/bz_build.sh は VIMI_HIMEM.bin が無い場合に対応。
+  - サイズ: low 32052(空き 8652)+ C000h 側の空き 約5KB(BSS C000..CBDC)。Cで残る editor 部分は 約1.3KB(ed_load, ed_init, ed_set_text, dosave, アクセサ)。hal の C(text_blk 2.5KB, fs_bdos 2.0KB, store_mz2500 1.1KB, store_file 0.6KB, vimi_main 0.5KB, hal_mz2500 0.3KB)は未着手。
+  - バグ修正(MZVIM79 以来): Ctrl-V の選択中の反転表示が、選択中の桁ではなく前回のブロック操作の桁(初回は0桁目)で描かれていた。描画時に blkgeom() を呼ぶ。ホストテスト6件追加(host_at で属性を確認)。
+  - 画面比較: tools/emu_regress.py に MZV_REF=参照ディスク モード(--screenshot の PPM をピクセル比較、違えばテキスト行を表示)。参照は `CRENDER=1 bash tools/bz_build.sh`(Cの描画を使うビルド)。tools/scen/screen.txt 72本 + BIG.TXT 4本で一致。`SCREEN=1 bash tools/check.sh` で実行。
+  - 観察: エミュの --type は1秒15文字。横スクロール中や大きいファイルのスクロール中は、Cの描画だとキーを取りこぼす(86文字中3文字、j 30回中2回)。asm の描画は速く、取りこぼしが減った(横スクロールの連打では 86文字中まだ落ちることがある)。比較用シナリオは区切って打つ。
+  - シナリオ追加: tools/scen/ex.txt(72) block.txt(40) screen.txt(72)。'_' はエミュのキー対応の都合で '\' になるので使わない。:e! はホスト(hostrun はファイル名なし)と突き合わせ不可。
+  - 注意: 裏で走らせたチェックは返信が終わると止まる。check.sh は同じターンの中で待つこと。
+- 外部レビュー(MZVIM84のソースに対する4点)への対応 (2026-11-15、バイナリは MZVIM85 のまま):
+  - ① tools/bz_build.sh: zcc の終了コードを直接見る(出力は $OUT/build.log)。失敗時は VIMI.COM を消して exit 1。各ビルドの前に古い VIMI.COM / VIMI_HIMEM.bin を消す。
+  - ② tools/check.sh: 各ログの最終行が "ALL OK" であることを要求(require_ok)。DIFF だけでなく、例外・タイムアウト・異常終了も失敗になる。
+  - ③ 画面描画の検証: MZVIM85 で対応済み(SCREEN=1、Cの描画ビルドとのピクセル比較)。
+  - ④ 実機未確認: そのまま。キーボードは IM1 ベクタ(0038h)を差し替え、元の処理へチェーンしない(編集中は LSX 側の割り込み処理が止まる。E5h 実行の前後は hal_exit / hal_init で元のベクタに戻してから呼んでいる)。実機での確認項目に入れる。
+- 作業は一旦停止(使用量の都合)。アセンブラ化の残り: ed_load/ed_init/ed_set_text/dosave(約1.3KB)と hal の C(text_blk, fs_bdos, store_mz2500, store_file, vimi_main, hal_mz2500 計約7KB)。
+- MZVIM86 (2026-11-15): editor 本体の残りを asm 化。hal/file_z80.asm: ed_init、ed_load、dosave、ed_goto、ed_redraw、ed_quit、matchpos。Z80版では ed_set_text とテスト用アクセサを外した。
+  - サイズ: low 31443(空き 9261)、far 0、BSS C000..CBD5、stack room 5077。editor 本体で C のまま残るのは setmsg・ulog_clear などの小物だけ(合計 約0.4KB)。
+  - 確認: ホスト 505/505・501/501。check.sh(既定+features+ex+move+undo2、SCREEN=1、BIG=1)全通過。手動: 新規ファイル([New File] → 入力 → :wq で内容一致)、末尾に改行のないファイル、大きすぎるファイル("too big (ramdisk 64)")、:w の "written 899"(1文字消したあと)。
+  - 未着手(本体以外の C、約7KB): text_blk、fs_bdos、store_mz2500、store_file、vimi_main、hal_mz2500。
+- アセンブラ化 第13・14段 (2026-11-16、未納品。次が MZVIM87): 本体以外の C もすべて asm 化。Z80 ビルドが C から取り込むのは core/editor.c(大域変数と setmsg など約0.4KB)だけ。
+  - hal/text_z80.asm に テキスト層の残り(tx_cap/len/free/reset/adopt/load_begin/load_chunk/read/ins/del、aux_put/get/move、表 _blen/_bnl/_bph は asm の BSS)。core/text_blk.c は Z80 の SRC から外した(ホストでは従来どおり使う)。
+  - hal/sys_z80.asm(新規): ストアの振り分け(st_select/init/exit/cap/get/put/read/write/move/findb/rfindb/countb)、スワップファイルの準備(stf_init/cap/exit)、BDOS ファイル入出力(fs_stream/load/save/erase/bat)、fs_exec、画面・キーの糊(hal_init/exit/clear/getkey/scroll/putrow)、main(引数 -n、-sD[KB]、+N、ファイル名)。
+  - SRC から外した C(ホスト用・参照用に残す): z80/vimi_main.c、hal/hal_mz2500.c、hal/fs_bdos.c、hal/store_mz2500.c、hal/store_file.c、core/text_blk.c。
+  - サイズ: low 28213(空き 12491。MZVIM86 は 31443)、far 0、BSS C000..CA03、stack room 5543。
+  - 途中で直したバグ: (1) text_z80 の _tx_aux_move の末尾(jp pop12 → call pop12 / ret)。(2) sys_z80 の `call pop5`(引数5語を捨てる共通処理を call で呼んでスタックを壊す。ファイルを読むと OS に落ちた)→ pop を並べた。jp pop5 は末尾専用。(3) crt0 は argv、argc の順に積む(main からは SP+2 が argc、SP+4 が argv)。
+  - ここまでの確認(部分): テキスト層 asm の時点で undo2・edit2・mid・big が ALL OK。sys_z80 に替えたあと features・ex・edit2・undo2 と、スワップファイル(-sF120)での mid(M.TXT 81KB)・big(BIG.TXT 120KB)が ALL OK。手動: `VIMI -n N.TXT` で新規 → 入力 → :wq(CRLF・^Z 詰めを d88 から確認)、`VIMI +12 C.TXT`(12行目)、旧LSXの :!dir(VIMICMD.BAT の中身 "dir \r\npause\r\nV +12 C.TXT\r\n")、新LSX(E5h)の :!dir → Press any key → 編集に復帰。
+  - 未実施(次の担当がやる): `export Z88DK_PATH=/home/claude/build/z88dk; BIG=1 SCREEN=1 bash tools/check.sh <seed>` の全通し(約45分、同じターンの中で待つ)→ 通れば /tmp/check.d88 を MZVIM87.d88 として納品、ソース zip、このメモを STATUS_vimi_22.md として保存(21 はこの段階の引き継ぎ用に保存済み)、BUILD.md の更新(SRC の一覧、sys_z80.asm の説明)。
+  - 注意: tools/scen/features.txt の `:r BR.TXT` は BR.TXT の入ったディスクが要る(check.sh は入れる。手で mkdisk するときは /tmp/BR.TXT を足す)。
+- MZVIM87 (2026-11-16): 全asm化(第13・14段)の納品版。`BIG=1 SCREEN=1 bash tools/check.sh 87` ALL CHECKS PASSED(ホスト 505/505・501/501、エミュ全シナリオ、画面ピクセル比較、64KB超 mid/big)。low 28213、BSS C000..CA03、stack room 5543。実機は未確認(0038h ISR のチェーン無し等)。

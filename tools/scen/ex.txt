@@ -1,0 +1,71 @@
+:s/alpha/A/\r
+:s/a/X/g\r
+:%s/alpha/A/\r
+:%s/a/X/g\r
+:2,4s/beta/B/\r
+:3s/l/L/g\r
+:.,$s/gamma/G/\r
+:1,3s/^/> /\r
+:%s/^line/L/\r
+:%s/delta$/D/\r
+:%s/a.p/[&]/\r
+:%s/[0-9][0-9]*/<&>/\r
+:%s/be*t/\\&/\r
+:%s/a/\\&&/g\r
+:s/zzz/y/\r
+:s//y/\r
+/gamma\r:s//GG/\r
+:%s/alpha beta //\r
+:%s/ *gamma */-/\r
+:s/a/b/g\r:s/b/a/\r
+:5\rx
+:$\rx
+:99\rx
+:0\rx
+:.\rx
+:3,5\rx
+:3d\r
+:2,4d\r
+:%d\r
+:.,$d\r
+:$d\r
+3G:d\r
+:5,3d\r
+:g/1/d\r
+:v/1/d\r
+:g/line0/s/alpha/A/\r
+:g/2/s/a/X/g\r
+:3,9g/line/d\r
+:v/line1/s/^/# /\r
+:g/zzz/d\r
+:g/a/\r
+:g/a/g/b/d\r
+:3,5w\r
+:foo\r
+:set ic\r/LINE05\rx
+:set noic\r/LINE05\rx
+:set ic\r:%s/ALPHA/x/\r
+:set zz\rx
+/gamma\rx
+/gamma\rnnx
+/gamma\rNx
+?beta\rx
+G/alpha\rx
+gg?delta\rx
+/line1[0-9]\rx
+/^line2\rx
+/delta$\rx
+/zzz\rx
+5G/line05\rx
+5G$?line05\rx
+/a\rnnnnnnnnnnnnx
+3G/l.*5\rx
+/\r x
+:r C.TXT\r
+G:r C.TXT\r
+:r NOFILE.TXT\rx
+:r\rx
+x:e\rjx
+:s/a/b/\ru
+:%s/a/b/g\ruu\^r
+:g/1/d\ru

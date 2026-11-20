@@ -1,0 +1,81 @@
+l
+jjj
+5jwww
+G
+Ggg
+25j
+25j3k
+G5k
+20j10k
+15jzt
+15jzz
+15jzb
+\^d
+\^d\^d\^u
+\^f
+\^f\^b
+3\^e
+5j3\^e2\^y
+28G
+28G1G
+10dd
+25dd
+ggdG
+dGihello\e
+A a long tail to\eA make this line\eA wider than the\eA eighty columns\eA of the screen,\eA yes really\e
+A a long tail to\eA make this line\eA wider than the\eA eighty columns\eA of the screen,\eA yes really\e0
+A a long tail to\eA make this line\eA wider than the\eA eighty columns\eA of the screen,\eA yes really\ejk$
+:set nu\r
+:set nu\rG
+:set nu\r25j
+:set nu\r:set nonu\r
+:set nu\rA a long tail to\eA make this line\eA wider than the\eA eighty columns\eA of the screen,\eA yes really\e
+:set nu\rvjj
+v
+vjj
+vee
+Vj
+wv$
+\vjjll
+w\vjjee
+\vG
+vjj\e
+iabc
+iabc\e
+Rxy
+ofoo
+:
+:set
+/alp
+?be
+:foo\r
+/zzz\r
+:s/a/b/\r
+x
+xu
+uu
+qa
+qaxq
+"ayy
+dd
+3x
+yy
+30ddu
+:9999\r
+G$
+3Gfg
+G:set nu\rgg
+A a long tail to\eA make this line\eA wider than the\eA eighty columns\eA of the screen,\eA yes really\e0
+A a long tail to\eA make this line\eA wider than the\eA eighty columns\eA of the screen,\eA yes really\e0$
+A a long tail to\eA make this line\eA wider than the\eA eighty columns\eA of the screen,\eA yes really\ehhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+A a long tail to\eA make this line\eA wider than the\eA eighty columns\eA of the screen,\eA yes really\ev0
+A a long tail to\eA make this line\eA wider than the\eA eighty columns\eA of the screen,\eA yes really\ejk
+:set nu\rA a long tail to\eA make this line\eA wider than the\eA eighty columns\eA of the screen,\eA yes really\e0$bbbbbbbbbbbb
+:w\r
+x:w\r
+x:w\rjj
+:e!\r
+x:e\r
+:w Y.TXT\r
+5G%
+A (a [b] c)\e0%

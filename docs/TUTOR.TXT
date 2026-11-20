@@ -1,0 +1,158 @@
+==============================================================================
+  VIMI TUTOR  -  a short course in vim for the MZ-2500
+==============================================================================
+ This file is a practice text: edit it freely, nothing here is precious.
+ Quit without saving with  :q!   Save and quit with  :wq   (or ZZ).
+ Modes: NORMAL (keys are commands), INSERT (keys are typed), VISUAL.
+ Esc always returns to NORMAL mode.  If a key does odd things, press Esc.
+
+------------------------------------------------------------------------------
+ LESSON 1 : MOVING THE CURSOR
+------------------------------------------------------------------------------
+   h  left        j  down        k  up        l  right
+   (the cursor keys work too; Space and BS also move right and left)
+   n|  go to column n of the line
+   +  or Return  next line, first non-blank        -  previous line, same
+   w  next word        b  previous word       e  end of word
+   0  start of line    ^  first non-blank     $  end of line
+   G  last line        gg  first line         5G  go to line 5
+   H  top of screen    M  middle              L  bottom
+   {  previous blank line (paragraph)         }  next blank line
+   (Shift + [ and Shift + ] on the keyboard)
+   Ctrl-F / Ctrl-B  page down / up      Ctrl-D / Ctrl-U  half page
+   zt / zz / zb     cursor line to the top / middle / bottom of the screen
+
+ Try: put the cursor on this line and press  w  w  w  b  $  0
+
+   The quick brown fox jumps over the lazy dog.
+   A number before a motion repeats it:  3w  moves three words.
+
+ Find a character on the line:  fx  jumps to the next x,  tx  just before it.
+   ;  repeats it,  ,  reverses it.      Try  fo  then  ;  ;  on this line.
+
+------------------------------------------------------------------------------
+ LESSON 2 : INSERTING TEXT
+------------------------------------------------------------------------------
+   i  insert before cursor      a  append after cursor
+   I  insert at line start      A  append at line end
+   o  open a line below         O  open a line above
+   R  replace mode: typed characters overwrite the text (Esc to finish)
+   Esc  back to NORMAL mode.    3ihi Esc  inserts "hihihi".
+
+ Exercise: add your name below with  o  and  Esc.
+
+   Name:
+
+------------------------------------------------------------------------------
+ LESSON 3 : DELETING, CHANGING, COPYING
+------------------------------------------------------------------------------
+   x  delete a character         X  delete before cursor
+   dd delete the line            D  delete to end of line
+   dw delete a word              d$ delete to end of line
+   cw change a word              cc change the whole line
+   r  replace one character      ~  swap upper/lower case (Shift + ^ key)
+   J  join with the next line  (3J joins 3 lines;  gJ joins without a space)
+   gU{motion}  make UPPER case    gu{motion}  lower case    g~{motion}  swap
+              (gUU  whole line,  gUiw  word,  in VISUAL mode: U  u  ~)
+   yy copy the line              yw copy a word       Y  same as yy
+   p  paste after cursor/below   P  paste before/above
+
+ Counts work everywhere:  3dd  deletes 3 lines,  2yy  copies 2 lines.
+
+ Exercise: move the lines into alphabetical order with  dd  and  p .
+
+   cherry
+   apple
+   banana
+
+ Exercise: fix the typos with  x  and  r :
+   Thiss lline has twoo mistaks.
+
+------------------------------------------------------------------------------
+ LESSON 4 : UNDO AND REPEAT
+------------------------------------------------------------------------------
+   u       undo            Ctrl-R   redo
+   .       repeat the last change
+   A change bigger than 512 bytes (for example  30dd ) cannot be undone:
+   the status line says "too big: cannot undo".  Save with :w before such a change.
+
+ Exercise: delete the next three lines with  dd  then  .  .  and press  u .
+   delete me 1
+   delete me 2
+   delete me 3
+
+------------------------------------------------------------------------------
+ LESSON 5 : TEXT OBJECTS
+------------------------------------------------------------------------------
+   diw  delete the word under the cursor      ciw  change it
+   daw  delete the word and a space           yiw  copy it
+   di(  di[  di{  di<  di"  di'  di`   delete what is inside brackets/quotes
+   da(  da[  da"  ...                 delete it with the brackets/quotes too
+   (ci( yi( work too;  dib = di( , diB = di{ )
+   In VISUAL mode  vi(  va"  viw  vaw  select the object (then d y c ...).
+   "ayy "Ayy "ap  named registers a-z (1KB total); A appends. p after "a also becomes the unnamed one.
+   qa ... q  record keys into register a (qA appends);  @a play, 3@a repeat, @@ again (max 80 keys).
+   :set ai  auto-indent: o O and Enter copy the indent of the line (:set noai to turn off).
+   :N,Md :%s/a/b/ :2,5s/a/b/  ranges (N . $ %).   :g/pat/cmd  :v/pat/cmd  (cmd = d or s/a/b/ ; :s//x/ reuses the pattern).
+ Exercise: put the cursor inside "wrong" and press  ciw  then type  right .
+   CTRL-V  block select: d x delete the columns, c changes them, I / A insert before / after them on every row
+           (columns count characters; block yank/paste is not available).
+   This word is wrong.
+
+------------------------------------------------------------------------------
+ LESSON 6 : SEARCH AND REPLACE
+------------------------------------------------------------------------------
+   /text Enter   search forward       n  next match      N  previous match
+   ?text Enter   search backward      (then n goes backward, N forward)
+   *  search for the word under the cursor      #  backwards
+   %  jump to the matching bracket  ( ) [ ] { }
+   :s/old/new/       replace the first match in this line
+   :s/old/new/g      replace every match in this line
+   :%s/old/new/g     replace in the whole file
+   & in the replacement stands for the matched text.
+   :set ic  ignore case in searches and :s       :set noic  back to exact case
+   :set nu  show line numbers                    :set nonu  hide them
+   Patterns: .  any char    [a-z]  a set    [^0-9]  not in set
+             x*  repeat     ^  line start    $  line end    \.  a real dot
+
+ Exercise:  :%s/cat/dog/g   on this text, then press u to undo it.
+   The cat sat on the mat with another cat.
+   (a bracket pair to try %  on) {like [this]}
+
+------------------------------------------------------------------------------
+ LESSON 7 : MARKS
+------------------------------------------------------------------------------
+   ma     set mark a (any letter a-z)
+   'a     jump to the line of mark a      `a  jump to the exact spot
+   d'a    delete from here to mark a      y`a  copy up to mark a
+   ''     jump back to where you were before the last jump (again = return)
+ Exercise: mark this line with  mt , go to the end with  G , come back with 't.
+
+------------------------------------------------------------------------------
+ LESSON 8 : VISUAL MODE
+------------------------------------------------------------------------------
+   v  select characters     V  select lines     (move to extend, o = other end)
+   then:  d  delete   y  copy   c  change   >  <  shift   Esc  cancel
+ Exercise: select these two lines with  V j  and press  >  to indent them.
+ line one
+ line two
+
+   >> shifts a line right,  << left.   3>>  shifts three lines.
+
+------------------------------------------------------------------------------
+ LESSON 9 : FILES
+------------------------------------------------------------------------------
+   :w          save              :w name    save as
+   :wq  or ZZ  save and quit     :q  quit  (:q! quit and discard changes)
+   :e name     open another file (save first, or use :e! to discard)
+   :r name     insert a file below the cursor line
+   :!cmd       run an OS command, press a key, come back (nothing is lost).
+   :r !cmd     insert the output of an OS command below the cursor line.
+               Needs the newer LSX (E5h) and 7 free pages: run  ramdisk 64  before VIMI.
+               On an older LSX, :!cmd saves and quits; start with  V file  (V.BAT) to come back.
+ Big files: start VIMI with  -sF120  to use a 120KB swap file on drive F:.
+        A>VIMI -sF120 BIG.TXT
+
+------------------------------------------------------------------------------
+ THE END.  Press :q!  to leave without saving this practice file.
+==============================================================================

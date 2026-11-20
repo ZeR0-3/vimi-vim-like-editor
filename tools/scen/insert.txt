@@ -1,0 +1,33 @@
+ihello\e
+ahello\e
+Ihello \e
+A tail\e
+oline\e
+Oline\e
+3ihi\e
+3ahi\e
+2oab\e
+2Oab\e
+3ix\eu
+3ix\e.
+ione\rtwo\rthree\e
+A\rnext\e
+wiab\^h\^hXY\e
+ia\^h\^h\^hz\e
+wi\^r\^rQ\e
+$a\^rJ\e
+Rxyz\e
+wRab\rcd\e
+$Rlong tail\e
+3Gi\^itab\e
+:set ai\rGo  ind\rmore\rlast\e
+:set ai\r3GI\^i\eotext\eOabove\e
+:set ai\rGo    deep\e3otri\e
+:set ai\r3GA\rsplit\e
+:set noai\rGo  ind\rflat\e
+ccnew line\e
+wcwword\ewww.
+i0123456789012345678901234567890123456789012345678901234567890123456789\e
+3i0123456789012345678901234567890123\e
+Sx\eu
+iab\ejicd\eu.
